@@ -23,7 +23,10 @@ export interface Instruction {
 
 export async function applyInstruction(instr: Instruction) {
   if (!models[instr.collection]) {
-    model(instr.collection, new Schema({}, { strict: false, collection: instr.collection }));
+    model(
+      instr.collection,
+      new Schema({}, { strict: false, collection: instr.collection }),
+    );
   }
   const Model = models[instr.collection];
 
@@ -31,7 +34,9 @@ export async function applyInstruction(instr: Instruction) {
   if (instr.addWithTransform && instr.addWithTransform.length > 0) {
     const transformFunctions = instr.addWithTransform.map((t) => ({
       new: t.new,
-      transformFn: new Function('doc', `return (${t.transform})(doc)`) as (doc: unknown) => unknown,
+      transformFn: new Function("doc", `return (${t.transform})(doc)`) as (
+        doc: unknown,
+      ) => unknown,
     }));
 
     const docs = await Model.find({});
@@ -39,7 +44,7 @@ export async function applyInstruction(instr: Instruction) {
       const setPayload: Record<string, unknown> = {};
       transformFunctions.forEach(({ new: newKey, transformFn }) => {
         const newValue = transformFn(doc);
-        if (typeof newValue !== 'undefined') {
+        if (typeof newValue !== "undefined") {
           setPayload[newKey] = newValue;
         }
       });
@@ -61,7 +66,7 @@ export async function applyInstruction(instr: Instruction) {
       const setPayload: Record<string, unknown> = {};
       addMappings.forEach(({ new: newKey, from }) => {
         const value = doc[from];
-        if (typeof value !== 'undefined') {
+        if (typeof value !== "undefined") {
           setPayload[newKey] = value;
         }
       });
@@ -73,9 +78,9 @@ export async function applyInstruction(instr: Instruction) {
 
   // 3. Remove old fields
   if (instr.removeOld && instr.removeOld.length > 0) {
-    const unsetPayload: Record<string, ''> = {};
+    const unsetPayload: Record<string, ""> = {};
     instr.removeOld.forEach((r) => {
-      unsetPayload[r.field] = '';
+      unsetPayload[r.field] = "";
     });
     await Model.updateMany({}, { $unset: unsetPayload });
   }
