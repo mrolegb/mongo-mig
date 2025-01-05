@@ -1,10 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { Instruction } from "./apply";
+import { Instruction, MigrationStatus } from "./apply";
 
 export interface MigrationLog {
   existingCollection: string;
   instructions?: Instruction;
   comments?: string;
+  status?: MigrationStatus;
+  statusMessage?: string;
   executedAt?: Date;
 }
 

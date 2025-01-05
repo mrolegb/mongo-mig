@@ -20,7 +20,6 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "eslint 'src/**/*.{ts,tsx}'",
     "test": "jest",
     "start": "ts-node src/index.ts",
     "docs": "typedoc --out docs src",

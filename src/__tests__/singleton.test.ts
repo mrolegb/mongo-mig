@@ -1,4 +1,4 @@
-import { MongoMemoryReplSet } from "mongodb-memory-server";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose, { Schema, Document } from "mongoose";
 import { applyInstruction } from "../apply";
 import { Instruction } from "../apply";
@@ -11,18 +11,18 @@ interface TestDoc extends Document {
   info?: { age?: number };
 }
 
-describe("apply instructions to replica set", () => {
-  let mongoReplSet: MongoMemoryReplSet;
+describe("apply instructions to singleton", () => {
+  let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
-    mongoReplSet = await MongoMemoryReplSet.create();
-    const uri = mongoReplSet.getUri();
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
     await mongoose.connect(uri);
   });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoReplSet.stop();
+    await mongoServer.stop();
   });
 
   it("apply to replica set", async () => {
@@ -46,7 +46,7 @@ describe("apply instructions to replica set", () => {
       removeOld: [{ field: "firstName" }, { field: "lastName" }],
     };
 
-    const result = await applyInstruction(instruction, true);
+    const result = await applyInstruction(instruction, false);
     expect(result.status).toBe("SUCCESS");
     expect(result.message).toBe("Migration successful");
 
