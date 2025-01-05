@@ -42,6 +42,7 @@ export interface Instruction {
 
 async function apply(
   instr: Instruction,
+  logCollection: string,
   session?: ClientSession,
 ): Promise<MigrationResult> {
   if (!models[instr.collection]) {
@@ -56,8 +57,18 @@ async function apply(
   const docs = await Model.find({}, null, { session });
   if (docs.length === 0) {
     if (session) await session.commitTransaction();
+    await log(
+      {
+        target: instr.collection,
+        instruction: instr,
+        comments: instr.comments,
+        status: MigrationStatus.WARNING,
+        statusMessage: "No documents found, skipping migration",
+      },
+      logCollection,
+    );
     return {
-      status: MigrationStatus.SUCCESS,
+      status: MigrationStatus.WARNING,
       message: "No documents found, skipping migration",
     };
   }
@@ -124,15 +135,29 @@ async function apply(
     await Model.bulkWrite(bulkOps, { session });
   }
 
+  await log(
+    {
+      target: instr.collection,
+      instruction: instr,
+      comments: instr.comments,
+      status: MigrationStatus.SUCCESS,
+      statusMessage: "Migration successful",
+    },
+    logCollection,
+  );
+
   return { status: MigrationStatus.SUCCESS, message: "Migration successful" };
 }
 
-async function applyWithTx(instr: Instruction): Promise<MigrationResult> {
+async function applyWithTx(
+  instr: Instruction,
+  logCollection: string,
+): Promise<MigrationResult> {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const result = await apply(instr, session);
+    const result = await apply(instr, logCollection, session);
     await session.commitTransaction();
     return result;
   } catch (error: any) {
@@ -146,14 +171,9 @@ async function applyWithTx(instr: Instruction): Promise<MigrationResult> {
 export async function applyInstruction(
   instr: Instruction,
   withTx: boolean,
+  logCollection: string = "migrationLog",
 ): Promise<MigrationResult> {
-  const result = withTx ? await applyWithTx(instr) : await apply(instr);
-  await log({
-    existingCollection: instr.collection,
-    instructions: instr,
-    comments: instr.comments,
-    status: result.status,
-    statusMessage: result.message,
-  });
-  return result;
+  return withTx
+    ? await applyWithTx(instr, logCollection)
+    : await apply(instr, logCollection);
 }

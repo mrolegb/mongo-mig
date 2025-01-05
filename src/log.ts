@@ -1,27 +1,29 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { ClientSession, Document, Schema } from "mongoose";
 import { Instruction, MigrationStatus } from "./apply";
 
 export interface MigrationLog {
-  existingCollection: string;
-  instructions?: Instruction;
+  target: string;
+  instruction: Instruction;
   comments?: string;
-  status?: MigrationStatus;
-  statusMessage?: string;
+  status: MigrationStatus;
+  statusMessage: string;
   executedAt?: Date;
 }
 
 const migrationLogSchema = new Schema<MigrationLog & Document>({
-  existingCollection: { type: String, required: true },
-  instructions: { type: Schema.Types.Mixed },
+  target: { type: String, required: true },
+  instruction: { type: Schema.Types.Mixed, required: true },
   comments: { type: String },
+  status: { type: String, required: true },
+  statusMessage: { type: String, required: true },
   executedAt: { type: Date, default: Date.now },
 });
 
-export async function log(log: MigrationLog) {
-  if (!mongoose.models["migrationLog"]) {
-    mongoose.model("migrationLog", migrationLogSchema);
+export async function log(log: MigrationLog, collectionName: string) {
+  if (!mongoose.models[collectionName]) {
+    mongoose.model(collectionName, migrationLogSchema);
   }
 
-  const MigrationLog = mongoose.models["migrationLog"];
+  const MigrationLog = mongoose.models[collectionName];
   await MigrationLog.create(log);
 }
